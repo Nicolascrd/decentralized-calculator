@@ -17,15 +17,6 @@ if [ $NUM -gt 9 ]; then
 	exit 1
 fi
 
-# ALLPORTSLINKED=""
-
-# for j in `seq 1 $NUM`
-# do
-# 	ALLPORTSLINKED+="-p 800$j:80"
-# done
-
-# par possible à virer pour utiliser docker network
-
 docker network create calculator-network
 
 for i in $(seq 1 $NUM); do
@@ -33,5 +24,5 @@ for i in $(seq 1 $NUM); do
 	echo "Building decentralized calculator image n°$i at port $PORT"
 	docker build -t $"decentralized-calculator-app-$i" --build-arg PORT=8000 --build-arg NUM=$i ./calculator-server/.
 	echo "Launching decentralized calculator n°$i at port $PORT"
-	docker run -id --rm --name $"decentra-calcu-$i" --net calculator-network -d $"decentralized-calculator-app-$i" ./calculator-server $i $NUM
+	docker run -id --rm --name $"decentra-calcu-$i" --net calculator-network -p $PORT:8000 -d $"decentralized-calculator-app-$i" ./calculator-server $i $NUM
 done
