@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"strconv"
 )
 
 func replyJSON(w http.ResponseWriter, content any, logger *log.Logger) error {
@@ -46,7 +47,7 @@ func unmarshalJSON(bytes []byte) (any, error) {
 	return ans, err
 }
 
-func postJSON(addr string, content any, logger *log.Logger) (any, error) {
+func postJSON(addr string, content any, logger *log.Logger) (*http.Response, error) {
 	thebytes, err := marshalJSON(content)
 	if err != nil {
 		logger.Printf("Cannot marshal post JSON: %s", err.Error())
@@ -69,33 +70,40 @@ func postJSON(addr string, content any, logger *log.Logger) (any, error) {
 		logger.Printf("Cannot post JSON to %s : %s", addr, err.Error())
 		return nil, err
 	}
-	// res, err := http.Post(fullAddr, "application/json", r)
-	// if err != nil {
-	// 	logger.Printf("Cannot post JSON to %s : %s", addr, err.Error())
-	// 	return nil, err
-	// }
+	return resp, nil
+}
 
-	res := resp
+func decodeJSONResponse(resp *http.Response, logger *log.Logger) (any, error) {
 
-	altString, err := ioutil.ReadAll(res.Body)
-	defer res.Body.Close()
+	bodyParsed, err := ioutil.ReadAll(resp.Body)
+	defer resp.Body.Close()
 	if err != nil {
-		logger.Printf("Cannot read (with ioutil) JSON ans from %s : %s", addr, err.Error())
+		logger.Printf("Cannot decode JSON ans: %s", err.Error())
 		return nil, err
 	}
 
-	// bodyParsed := make([]byte, int(res.ContentLength))
-	// logger.Printf("body parsed length %d %s", len(bodyParsed), res.Body)
-	// _, err = res.Body.Read(bodyParsed)
-	// if err != nil {
-	// 	logger.Printf("Cannot read JSON ans from %s : %s", addr, err.Error())
-	// 	return nil, err
-	// }
-	bodyParsed := altString
 	ans, err := unmarshalJSON(bodyParsed)
 	if err != nil {
-		logger.Printf("Cannot unmarshal JSON ans from %s : %s", addr, err.Error())
+		logger.Printf("Cannot unmarshal JSON ans : %s", err.Error())
 		return nil, err
 	}
 	return ans, nil
+}
+
+func decodeIntResponse(resp *http.Response, logger *log.Logger) (int, error) {
+	bodyParsed, err := ioutil.ReadAll(resp.Body)
+	defer resp.Body.Close()
+	if err != nil {
+		logger.Printf("Cannot decode int ans: %s", err.Error())
+		return 0, err
+	}
+
+	ans := string(bodyParsed)
+	integer, err := strconv.Atoi(ans)
+	if len(ans) == 0 || err != nil {
+		logger.Printf("Cannot unmarshal int ans : %s", err.Error())
+		return 0, err
+	}
+
+	return integer, nil
 }

@@ -165,11 +165,14 @@ func (calc *calculatorServer) leaderSendHB() {
 func (calc *calculatorServer) requestVote(addr string) bool {
 	var response voteResponse
 	calc.logger.Printf("Request vote sent to %s", addr)
-	res, err := postJSON(addr+voteEndpoint, voteRequest{CandidateID: calc.ID, Term: calc.currentTerm}, &calc.logger)
+	resp, err := postJSON(addr+voteEndpoint, voteRequest{CandidateID: calc.ID, Term: calc.currentTerm}, &calc.logger)
 	if err != nil {
 		calc.logger.Printf("Error requesting vote at %s : %s", addr, err.Error())
 		return false
 	}
+
+	res, err := decodeJSONResponse(resp, &calc.logger)
+
 	err = mapstructure.Decode(res, &response)
 	if err != nil {
 		calc.logger.Printf("Error parsing vote from %s : %s", addr, err.Error())
@@ -181,15 +184,62 @@ func (calc *calculatorServer) requestVote(addr string) bool {
 
 func (calc *calculatorServer) sendHB(addr string) bool {
 	var response heatBeatResponse
-	res, err := postJSON(addr+heartbeatEndpoint, heartBeatRequest{LeaderID: calc.ID, LeaderAddr: calc.addr, LeaderTerm: calc.currentTerm}, &calc.logger)
+	resp, err := postJSON(addr+heartbeatEndpoint, heartBeatRequest{LeaderID: calc.ID, LeaderAddr: calc.addr, LeaderTerm: calc.currentTerm}, &calc.logger)
+
 	if err != nil {
 		calc.logger.Printf("Error sending HB at %s : %s", addr, err.Error())
 		return false
 	}
+
+	res, err := decodeJSONResponse(resp, &calc.logger)
+
+	if err != nil {
+		calc.logger.Printf("Error decoding JSON HB response at %s : %s", addr, err.Error())
+		return false
+	}
+
 	err = mapstructure.Decode(res, &response)
 	if err != nil {
 		calc.logger.Printf("Error parsing vote from %s : %s", addr, err.Error())
 		return false
 	}
 	return response.Success
+}
+
+func (calc *calculatorServer) transferLeader(content calculatorRequest) int {
+	resp, err := postJSON(calc.leaderAddr+calculationEndpoint, content, &calc.logger)
+
+	if err != nil {
+		calc.logger.Printf("Error transfering calculation to leader : %s", err.Error())
+		return 0
+	}
+
+	integer, err := decodeIntResponse(resp, &calc.logger)
+
+	if err != nil {
+		calc.logger.Printf("Error decoding int response from leader : %s", err.Error())
+		return 0
+	}
+
+	return integer
+}
+
+func (calc *calculatorServer) transferFromLeader(node int, content calculatorRequest) int {
+	resp, err := postJSON(calc.sys.addresses[node-1]+calculationInternalEndpoint, content, &calc.logger)
+
+	calc.logger.Printf("Transfering calculation to node n°%d", node)
+
+	if err != nil {
+		calc.logger.Printf("Error transfering calculation to leader : %s", err.Error())
+		return 0
+	}
+
+	integer, err := decodeIntResponse(resp, &calc.logger)
+
+	if err != nil {
+		calc.logger.Printf("Error decoding int response from leader : %s", err.Error())
+		return 0
+	}
+
+	return integer
 }

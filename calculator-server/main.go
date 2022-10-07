@@ -11,7 +11,8 @@ import (
 
 const voteEndpoint string = "/vote"
 const heartbeatEndpoint string = "/heartBeat"
-const calculationEndpoint string = "/calc"
+const calculationEndpoint string = "/calc"                  // for client to query nodes
+const calculationInternalEndpoint string = "/calc-internal" // for leader to query nodes
 
 type system struct {
 	numberOfNodes int      // number of nodes in the whole system
@@ -20,7 +21,7 @@ type system struct {
 
 type calculatorServer struct {
 	logger      log.Logger // associated logger
-	addr        string     // port e.g. :8001
+	addr        string     // URL in container eg centra-calcu-1:8000
 	ID          int        // server number e.g. 1
 	leaderID    int        // server number corresponding to known leader
 	leaderAddr  string     // port associated to leader
@@ -100,6 +101,7 @@ func (calc *calculatorServer) launchCalculatorServer() {
 	http.HandleFunc(calculationEndpoint, calc.calcHandler)
 	http.HandleFunc(heartbeatEndpoint, calc.heartBeatHandler)
 	http.HandleFunc(voteEndpoint, calc.vote)
+	http.HandleFunc(calculationInternalEndpoint, calc.calcInternalHandler)
 
 	err := http.ListenAndServe(calc.addr, nil)
 	if err != nil {
