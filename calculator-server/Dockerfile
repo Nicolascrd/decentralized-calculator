@@ -2,9 +2,7 @@ FROM golang
 
 WORKDIR /usr/src/app
 
-ARG PORT 
-
-EXPOSE $PORT
+EXPOSE 8000
 
 COPY . .
 

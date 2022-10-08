@@ -2,7 +2,9 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
+	"sort"
 	"sync"
 	"time"
 
@@ -118,17 +120,17 @@ func (calc *calculatorServer) apply() {
 	calc.status = 3
 	calc.currentTerm++
 	var wg sync.WaitGroup
-	for i := 1; i <= calc.sys.numberOfNodes; i++ {
-		if i == calc.ID {
+	for id, addr := range calc.sys.addresses {
+		if id == calc.ID {
 			continue
 		}
 		wg.Add(1)
-		go func(i int) {
+		go func(i int, addr string) {
 			defer wg.Done()
-			if calc.requestVote(calc.sys.addresses[i-1]) {
+			if calc.requestVote(addr) {
 				numberOfVotes++
 			}
-		}(i)
+		}(id, addr)
 	}
 	wg.Wait()
 	if numberOfVotes <= calc.sys.numberOfNodes/2 { // no strict majority
@@ -146,19 +148,25 @@ func (calc *calculatorServer) leaderSendsHB() {
 	calc.leaderID = calc.ID
 	var wg sync.WaitGroup
 	numOfValidations := 0
-	for i := 1; i <= calc.sys.numberOfNodes; i++ {
-		if i == calc.ID {
+	doFollow := make([]int, 0)
+	for id, addr := range calc.sys.addresses {
+		if id == calc.ID {
 			continue
 		}
 		wg.Add(1)
-		go func(i int) {
+		go func(i int, addr string, df *[]int) {
 			defer wg.Done()
-			if calc.sendHB(calc.sys.addresses[i-1]) {
+			if calc.sendHB(addr) {
 				numOfValidations++
+				*df = append(*df, i)
 			}
-		}(i)
+		}(id, addr, &doFollow)
 	}
 	wg.Wait()
+	if numOfValidations < calc.sys.numberOfNodes-1 {
+		calc.logger.Printf("Leader send HB process terminated, %d nodes do not follow : %v", calc.sys.numberOfNodes-1-numOfValidations, doFollow)
+		calc.newSys(doFollow)
+	}
 	calc.logger.Printf("Leader send HB process terminated, %d nodes follow", numOfValidations)
 }
 
@@ -187,7 +195,7 @@ func (calc *calculatorServer) sendHB(addr string) bool {
 	resp, err := postJSON(addr+heartbeatEndpoint, heartBeatRequest{LeaderID: calc.ID, LeaderAddr: calc.addr, LeaderTerm: calc.currentTerm}, &calc.logger)
 
 	if err != nil {
-		calc.logger.Printf("Error sending HB at %s : %s", addr, err.Error())
+		calc.logger.Printf("ERROR SENDING HB at %s : %s", addr, err.Error())
 		return false
 	}
 
@@ -225,7 +233,7 @@ func (calc *calculatorServer) transferLeader(content calculatorRequest) int {
 }
 
 func (calc *calculatorServer) transferFromLeader(node int, content calculatorRequest) int {
-	resp, err := postJSON(calc.sys.addresses[node-1]+calculationInternalEndpoint, content, &calc.logger)
+	resp, err := postJSON(calc.sys.addresses[node]+calculationInternalEndpoint, content, &calc.logger)
 
 	calc.logger.Printf("Transfering calculation to node n°%d", node)
 
@@ -242,4 +250,24 @@ func (calc *calculatorServer) transferFromLeader(node int, content calculatorReq
 	}
 
 	return integer
+}
+
+func (calc *calculatorServer) newSys(doFollow []int) {
+	fmt.Printf("new sys called with doFollow %v and addresses %v", doFollow, calc.sys.addresses)
+	sort.Slice(doFollow, func(i, j int) bool {
+		return i < j
+	})
+	// doFollow contains the ids of the following nodes, sorted
+
+	// self-update
+	nbFollowers := len(doFollow)
+	calc.sys.numberOfNodes = nbFollowers + 1
+	newAddresses := make(map[int]string)
+	newAddresses[calc.ID] = calc.addr
+	for i := 0; i < nbFollowers; i++ {
+		// calc.sys.addresses[doFollow[i]] is the address of the node (or addr for the leader)
+		newAddresses[doFollow[i]] = calc.sys.addresses[doFollow[i]]
+	}
+	calc.sys.addresses = newAddresses
+	calc.logger.Printf("New addresses list in system : %v", newAddresses)
 }

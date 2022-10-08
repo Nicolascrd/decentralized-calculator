@@ -15,8 +15,8 @@ const calculationEndpoint string = "/calc"                  // for client to que
 const calculationInternalEndpoint string = "/calc-internal" // for leader to query nodes
 
 type system struct {
-	numberOfNodes int      // number of nodes in the whole system
-	addresses     []string // ports of all nodes in order (including this one)
+	numberOfNodes int            // number of nodes in the whole system
+	addresses     map[int]string // ports of all nodes in order (including this one)
 }
 
 type calculatorServer struct {
@@ -77,9 +77,9 @@ func newCalculatorServer(num int, tot int) *calculatorServer {
 	l := log.New(log.Writer(), "CalculatorServer - "+fmt.Sprint(num)+"  ", log.Ltime)
 	c := make(chan time.Time)
 
-	addresses := make([]string, tot)
-	for i := range addresses {
-		addresses[i] = "decentra-calcu-" + fmt.Sprint(i+1) + ":8000"
+	addresses := make(map[int]string)
+	for i := 1; i <= tot; i++ {
+		addresses[i] = "decentra-calcu-" + fmt.Sprint(i) + ":8000"
 	}
 	sys := system{
 		numberOfNodes: tot,

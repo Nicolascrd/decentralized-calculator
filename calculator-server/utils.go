@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"time"
 )
 
 func replyJSON(w http.ResponseWriter, content any, logger *log.Logger) error {
@@ -63,7 +64,9 @@ func postJSON(addr string, content any, logger *log.Logger) (*http.Response, err
 		return nil, err
 	}
 	req.Header.Add("Content-Type", "application/json")
-	client := &http.Client{}
+	client := &http.Client{
+		Timeout: time.Millisecond * 300, // 300 ms max to reply
+	}
 	resp, err := client.Do(req)
 
 	if err != nil {
