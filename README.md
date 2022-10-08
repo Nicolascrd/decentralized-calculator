@@ -14,9 +14,25 @@ This project is part of my end-of-studies research project on consensus algorith
 
 ## Testing
 
+Launch the containers with :
+
 ```
 sh launch.sh <3 4 5 6> # number of containers to start (min 3 max 9)
 
 curl -X POST localhost:800<1 2 3>/calc -H 'Content-Type: application/json' \
     -d '{"operationType":2,"a":10, "b":2}' # ask container <1 2 3> for the result of 10 - 2
 ```
+\
+Check the logs of container <1 2 3> with :
+
+```
+docker logs --follow decentra-calcu-<1 2 3>
+```
+\
+You can also try crashing containers with :
+
+```
+docker stop decentra-calcu-<1 2 3>
+```
+\
+See what happens in the logs as the consensus algorithm run !
