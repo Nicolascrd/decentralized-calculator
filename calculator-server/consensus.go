@@ -98,7 +98,7 @@ func (calc *calculatorServer) launchTicker() {
 			if calc.status == 1 {
 				// leader does not expect HB, but sends them
 				calc.logger.Printf("Leader sends HB")
-				calc.leaderSendHB()
+				calc.leaderSendsHB()
 			} else {
 				if calc.hbReceived {
 					calc.logger.Printf("Ticker ticked, with heartbeat received")
@@ -136,10 +136,10 @@ func (calc *calculatorServer) apply() {
 		calc.status = 2
 		return
 	}
-	calc.leaderSendHB()
+	calc.leaderSendsHB()
 }
 
-func (calc *calculatorServer) leaderSendHB() {
+func (calc *calculatorServer) leaderSendsHB() {
 	// new leader
 	calc.status = 1
 	calc.leaderAddr = calc.addr
