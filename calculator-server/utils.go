@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"log"
+	"math/rand"
 	"net/http"
 	"strconv"
 	"time"
@@ -109,4 +110,14 @@ func decodeIntResponse(resp *http.Response, logger *log.Logger) (int, error) {
 	}
 
 	return integer, nil
+}
+
+func randomFromMapIndexes(m *map[int]string) int {
+	count := 0
+	arr := make([]int, 0)
+	for ind := range *m {
+		count++
+		arr = append(arr, ind)
+	}
+	return arr[rand.Intn(count)]
 }

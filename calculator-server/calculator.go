@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"math/rand"
 	"net/http"
 )
 
@@ -21,9 +20,8 @@ func (calc *calculatorServer) calcHandler(w http.ResponseWriter, r *http.Request
 		// if calc is posted to a node which is not the leader
 		res = calc.transferLeader(parsed)
 	} else {
-		// replace --> ask a random follower or to the leader himself
-
-		res = calc.transferFromLeader(rand.Intn(calc.sys.numberOfNodes)+1, parsed)
+		// ask a random follower or to the leader himself
+		res = calc.transferFromLeader(randomFromMapIndexes(&calc.sys.Addresses), parsed)
 	}
 	io.WriteString(w, fmt.Sprint(res))
 	return

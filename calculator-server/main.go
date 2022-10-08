@@ -13,10 +13,11 @@ const voteEndpoint string = "/vote"
 const heartbeatEndpoint string = "/heartBeat"
 const calculationEndpoint string = "/calc"                  // for client to query nodes
 const calculationInternalEndpoint string = "/calc-internal" // for leader to query nodes
+const updateSysEndpoint string = "/update-sys"              // for leader to update system knowledge among followers
 
 type system struct {
-	numberOfNodes int            // number of nodes in the whole system
-	addresses     map[int]string // ports of all nodes in order (including this one)
+	NumberOfNodes int            `json:"numberOfNodes"` // number of nodes in the whole system
+	Addresses     map[int]string `json:"addresses"`     // ports of all nodes in order (including this one)
 }
 
 type calculatorServer struct {
@@ -82,8 +83,8 @@ func newCalculatorServer(num int, tot int) *calculatorServer {
 		addresses[i] = "decentra-calcu-" + fmt.Sprint(i) + ":8000"
 	}
 	sys := system{
-		numberOfNodes: tot,
-		addresses:     addresses,
+		NumberOfNodes: tot,
+		Addresses:     addresses,
 	}
 
 	return &calculatorServer{
@@ -102,6 +103,7 @@ func (calc *calculatorServer) launchCalculatorServer() {
 	http.HandleFunc(heartbeatEndpoint, calc.heartBeatHandler)
 	http.HandleFunc(voteEndpoint, calc.vote)
 	http.HandleFunc(calculationInternalEndpoint, calc.calcInternalHandler)
+	http.HandleFunc(updateSysEndpoint, calc.updateSysHandler)
 
 	err := http.ListenAndServe(calc.addr, nil)
 	if err != nil {
