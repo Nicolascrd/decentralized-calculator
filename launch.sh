@@ -8,12 +8,12 @@ else
 fi
 
 if [ $NUM -lt 2 ]; then
-	echo argument too small choose between 2 and 9
+	echo argument too small choose between 2 and 99
 	exit 1
 fi
 
-if [ $NUM -gt 9 ]; then
-	echo argument too big choose between 2 and 9
+if [ $NUM -gt 99 ]; then
+	echo argument too big choose between 2 and 99
 	exit 1
 fi
 

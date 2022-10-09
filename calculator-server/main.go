@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -40,6 +41,12 @@ type calculatorRequest struct {
 	B             int `json:"b"`             // second element
 }
 
+type config struct {
+	UpdateSystem bool `json:"updateSystem"`
+}
+
+var globalConfig config
+
 func main() {
 	fmt.Println("Hello calculator")
 	args := os.Args[1:]
@@ -53,8 +60,8 @@ func main() {
 		fmt.Println("First argument provided should be an int but \n " + err.Error())
 		return
 	}
-	if ind < 0 || ind > 9 {
-		fmt.Println("First Number given is out of bounds ([0,9])")
+	if ind < 0 || ind > 99 {
+		fmt.Println("First Number given is out of bounds ([0,99])")
 		return
 	}
 	tot, err := strconv.Atoi(args[1])
@@ -62,10 +69,23 @@ func main() {
 		fmt.Println("Second argument provided should be an int but \n" + err.Error())
 		return
 	}
-	if tot < 0 || tot > 9 {
-		fmt.Println("Second Number given is out of bounds ([0,9])")
+	if tot < 0 || tot > 99 {
+		fmt.Println("Second Number given is out of bounds ([0,99])")
 		return
 	}
+	configFile, err := os.Open("config.json")
+	if err != nil {
+		fmt.Println("Could not open config json : " + err.Error())
+		return
+	}
+	jsonParser := json.NewDecoder(configFile)
+	jsonParser.Decode(&globalConfig)
+	if err != nil {
+		fmt.Println("Could not decode config json : " + err.Error())
+		return
+	}
+	configFile.Close()
+	fmt.Println("config : ", globalConfig)
 	calc := newCalculatorServer(ind, tot)
 	go calc.launchTicker() // initiate timeouts
 

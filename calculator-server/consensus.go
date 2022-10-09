@@ -165,7 +165,9 @@ func (calc *calculatorServer) leaderSendsHB() {
 	wg.Wait()
 	if numOfValidations < calc.sys.NumberOfNodes-1 {
 		calc.logger.Printf("Leader send HB process terminated, %d nodes do not follow : %v", calc.sys.NumberOfNodes-1-numOfValidations, doFollow)
-		calc.newSys(doFollow)
+		if globalConfig.UpdateSystem {
+			calc.newSys(doFollow)
+		}
 	}
 	calc.logger.Printf("Leader send HB process terminated, %d nodes follow", numOfValidations)
 }
