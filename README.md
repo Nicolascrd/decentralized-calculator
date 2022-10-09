@@ -6,7 +6,7 @@ Running the shell script will start some containers (3 by default), each one imp
 
 The client can query any of the containers, at :8001 for container 1, :8002 for container 2 ...
 
-The consensus algorithm will then run with the containers and the client should receive its response, with one container "allowed" to failed.
+The consensus algorithm will then run with the containers and the client should receive its response, with one container "allowed" to fail.
 
 ## Context
 
