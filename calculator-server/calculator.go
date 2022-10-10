@@ -25,8 +25,13 @@ func (calc *calculatorServer) calcHandler(w http.ResponseWriter, r *http.Request
 		// if calc is posted to a node which is not the leader
 		res = calc.transferLeader(parsed)
 	} else {
-		// ask a random follower or to the leader himself
-		res = calc.transferFromLeader(randomFromMapIndexes(&calc.sys.Addresses), parsed)
+		if !globalConfig.MajorityVoteCalculation {
+			// ask a random follower or to the leader himself
+			res = calc.transferFromLeader(randomFromMapIndexes(&calc.sys.Addresses), parsed)
+		} else {
+			// ask all followers and the leader himself to get a majority
+			res = calc.majorityVoteCalculation(parsed)
+		}
 	}
 	io.WriteString(w, fmt.Sprint(res))
 	return

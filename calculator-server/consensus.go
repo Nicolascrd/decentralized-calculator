@@ -256,6 +256,41 @@ func (calc *calculatorServer) transferFromLeader(node int, content calculatorReq
 	return integer
 }
 
+func (calc *calculatorServer) majorityVoteCalculation(calculation calculatorRequest) int {
+	// only leader should do this
+	votes := make(map[int]int)
+	var wg sync.WaitGroup
+	var mut sync.Mutex // avoid concurrent map access
+	for node := range calc.sys.Addresses {
+		wg.Add(1)
+		go func(node int, content calculatorRequest) {
+			vote := calc.transferFromLeader(node, content)
+			mut.Lock()
+			if _, ok := votes[vote]; ok {
+				votes[vote]++
+			} else {
+				votes[vote] = 1
+			}
+			mut.Unlock()
+			wg.Done()
+		}(node, calculation)
+	}
+	wg.Wait()
+	var max, res int
+	for value, nbVotes := range votes {
+		if nbVotes > max {
+			res = value
+			max = nbVotes
+		}
+	}
+	if max < len(calc.sys.Addresses)/2 {
+		fmt.Println("Majority vote for calculation : no 50% majority")
+	} else {
+		fmt.Println("Majority vote for calculation : at least 50% majority")
+	}
+	return res
+}
+
 func (calc *calculatorServer) newSys(doFollow []int) {
 	fmt.Printf("new sys called with doFollow %v and addresses %v", doFollow, calc.sys.Addresses)
 	sort.Slice(doFollow, func(i, j int) bool {

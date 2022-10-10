@@ -4,7 +4,8 @@ Decentralized calculator is a project to implement basic consensus algorithms.
 
 Running the shell script will start some containers (3 by default), each one implementing a basic calculator server.
 
-Some containers can contain a failing calculator, at the moment no check are made on the result and some times the random result will be returned.
+Some containers can contain a failing calculator which replies a random integer instead of the calculation.
+To tackle this, a parameter allows the user to switch the leader query to a majority vote.
 
 The client can query any of the containers, at :8001 for container 1, :8002 for container 2 ...
 
@@ -17,6 +18,16 @@ This project is part of my end-of-studies research project on consensus algorith
 Check out my bibliographic survey on consensus algorithms at https://github.com/Nicolascrd/researchProjectConsensus/blob/master/biblio-rp.pdf 
 
 ## Testing
+
+Select your parameters in config.json :
+
+```
+{
+    "updateSystem" : If true the systems remap when one node is failing completely (failing to reply to request within 300ms)
+    "majorityVoteCalculation" : If true the leader triggers a majority vote for each calculation (all nodes calculate and vote)
+}
+```
+
 
 Launch the containers with :
 

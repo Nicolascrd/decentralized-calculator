@@ -43,7 +43,8 @@ type calculatorRequest struct {
 }
 
 type config struct {
-	UpdateSystem bool `json:"updateSystem"`
+	UpdateSystem            bool `json:"updateSystem"`
+	MajorityVoteCalculation bool `json:"majorityVoteCalculation"`
 }
 
 var globalConfig config
