@@ -12,6 +12,8 @@ The consensus algorithm will then run with the containers and the client should 
 
 This project is part of my end-of-studies research project on consensus algorithms.
 
+Check out my bibliographic survey on consensus algorithms at https://github.com/Nicolascrd/researchProjectConsensus/blob/master/biblio-rp.pdf 
+
 ## Testing
 
 Launch the containers with :
