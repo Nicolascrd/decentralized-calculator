@@ -37,9 +37,9 @@ type calculatorServer struct {
 }
 
 type calculatorRequest struct {
-	OperationType int `json:"operationType"` // 1 : add,2 : substract,3 : multiply or 4 : divide
-	A             int `json:"a"`             // first element
-	B             int `json:"b"`             // second element
+	OperationType string `json:"operationType"` // + : add, - : substract, * : multiply or / : divide (euclidean)
+	A             int    `json:"a"`             // first element
+	B             int    `json:"b"`             // second element
 }
 
 type config struct {

@@ -31,8 +31,10 @@ Query the containers with :
 
 ```
 curl -X POST localhost:800<1 2 3>/calc -H 'Content-Type: application/json' \
-    -d '{"operationType":2,"a":10, "b":2}' # ask container <1 2 3> for the result of 10 - 2
+    -d '{"operationType":"-","a":10, "b":2}' # ask container <1 2 3> for the result of 10 - 2
 ```
+Supported operations are +, -, *, / (euclidian division)
+\
 \
 Check the logs of container <1 2 3> with :
 

@@ -16,6 +16,10 @@ func (calc *calculatorServer) calcHandler(w http.ResponseWriter, r *http.Request
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+	if !supported(parsed.OperationType) {
+		http.Error(w, fmt.Sprintf("String %q passed to calculator does not represent a supported operation", parsed.OperationType), http.StatusBadRequest)
+		return
+	}
 	calc.logger.Println("Receive calculation :", parsed)
 	if calc.status != 1 {
 		// if calc is posted to a node which is not the leader
@@ -40,26 +44,44 @@ func (calc *calculatorServer) calcInternalHandler(w http.ResponseWriter, r *http
 	if calc.failing {
 		res = failingCalculator()
 	} else {
-		res = calculator(parsed.A, parsed.B, parsed.OperationType)
+		res, err = calculator(parsed.A, parsed.B, parsed.OperationType)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
 	}
 	io.WriteString(w, fmt.Sprint(res))
 	return
 }
 
-func calculator(a int, b int, op int) int {
+func calculator(a int, b int, op string) (int, error) {
 	switch op {
-	case 1:
-		return a + b
-	case 2:
-		return a - b
-	case 3:
-		return a * b
-	case 4:
-		return a / b
+	case "+":
+		return a + b, nil
+	case "-":
+		return a - b, nil
+	case "*":
+		return a * b, nil
+	case "/":
+		return a / b, nil
 	}
-	return 0
+	return 0, fmt.Errorf("String %q passed to calculator does not represent a supported operation", op)
 }
 
 func failingCalculator() int {
 	return rand.Int()
+}
+
+func supported(op string) bool {
+	switch op {
+	case "+":
+		return true
+	case "-":
+		return true
+	case "*":
+		return true
+	case "/":
+		return true
+	}
+	return false
 }
