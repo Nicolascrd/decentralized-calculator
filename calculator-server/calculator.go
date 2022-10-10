@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"math/rand"
 	"net/http"
 )
 
@@ -35,8 +36,12 @@ func (calc *calculatorServer) calcInternalHandler(w http.ResponseWriter, r *http
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	calc.logger.Println("Receive calculation from leader :", parsed)
-	res = calculator(parsed.A, parsed.B, parsed.OperationType)
+	calc.logger.Printf("Receive calculation from leader : %v, is failing : %t", parsed, calc.failing)
+	if calc.failing {
+		res = failingCalculator()
+	} else {
+		res = calculator(parsed.A, parsed.B, parsed.OperationType)
+	}
 	io.WriteString(w, fmt.Sprint(res))
 	return
 }
@@ -53,4 +58,8 @@ func calculator(a int, b int, op int) int {
 		return a / b
 	}
 	return 0
+}
+
+func failingCalculator() int {
+	return rand.Int()
 }

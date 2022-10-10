@@ -31,6 +31,7 @@ type calculatorServer struct {
 	hbReceived  bool       // true if a heart beat from the leader was received, reset to false at each tick from ticker
 	currentTerm int        // term is the period
 	votedFor    int        // id of node the server voted for in the current term
+	failing     bool       // byzantine failure assumed to make the result of calculation random
 	timeout     <-chan time.Time
 	sys         system // each node knows the system
 }
@@ -50,8 +51,8 @@ var globalConfig config
 func main() {
 	fmt.Println("Hello calculator")
 	args := os.Args[1:]
-	if len(args) != 2 {
-		fmt.Println("Wrong number of arguments in command line, expecting only two number between 0 and 9")
+	if len(args) != 3 {
+		fmt.Println("Wrong number of arguments in command line, expecting only 2 numbers between 0 and 99 and one bool")
 		return
 	}
 
@@ -73,6 +74,11 @@ func main() {
 		fmt.Println("Second Number given is out of bounds ([0,99])")
 		return
 	}
+	byz, err := strconv.ParseBool(args[2])
+	if err != nil {
+		fmt.Println("Third argument given should be an bool but \n " + err.Error())
+		return
+	}
 	configFile, err := os.Open("config.json")
 	if err != nil {
 		fmt.Println("Could not open config json : " + err.Error())
@@ -86,13 +92,13 @@ func main() {
 	}
 	configFile.Close()
 	fmt.Println("config : ", globalConfig)
-	calc := newCalculatorServer(ind, tot)
+	calc := newCalculatorServer(ind, tot, byz)
 	go calc.launchTicker() // initiate timeouts
 
 	calc.launchCalculatorServer()
 }
 
-func newCalculatorServer(num int, tot int) *calculatorServer {
+func newCalculatorServer(num int, tot int, failing bool) *calculatorServer {
 	// num : number of this container (this node)
 	// tot : total number of containers (nodes in the system)
 	l := log.New(log.Writer(), "CalculatorServer - "+fmt.Sprint(num)+"  ", log.Ltime)
@@ -115,6 +121,7 @@ func newCalculatorServer(num int, tot int) *calculatorServer {
 		sys:         sys,
 		status:      2,
 		currentTerm: 0, // currentTerm is incremented and starts at 1 at first apply
+		failing:     failing,
 	}
 }
 
