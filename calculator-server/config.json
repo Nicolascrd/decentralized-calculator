@@ -1,4 +1,7 @@
 {
-    "updateSystem" : false,
-    "majorityVoteCalculation" : true
+  "configGraph": [
+    [1, 1, 1],
+    [1, 1, 1],
+    [1, 1, 1]
+  ]
 }

@@ -20,46 +20,11 @@ func (calc *calculatorServer) calcHandler(w http.ResponseWriter, r *http.Request
 		http.Error(w, fmt.Sprintf("String %q passed to calculator does not represent a supported operation", parsed.OperationType), http.StatusBadRequest)
 		return
 	}
-	calc.logger.Println("Receive calculation :", parsed)
-	if calc.status != 1 {
-		// if calc is posted to a node which is not the leader
-		res = calc.transferLeader(parsed)
-	} else {
-		if !globalConfig.MajorityVoteCalculation {
-			// ask a random follower or to the leader himself
-			for {
-				res, err = calc.transferFromLeader(randomFromMapIndexes(&calc.sys.Addresses), parsed)
-				if err == nil {
-					break
-				}
-			}
-		} else {
-			// ask all followers and the leader himself to get a majority
-			res = calc.majorityVoteCalculation(parsed)
-		}
-	}
-	io.WriteString(w, fmt.Sprint(res))
-	return
-}
 
-func (calc *calculatorServer) calcInternalHandler(w http.ResponseWriter, r *http.Request) {
-	var parsed calculatorRequest
-	var res int
-	err := json.NewDecoder(r.Body).Decode(&parsed)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-	calc.logger.Printf("Receive calculation from leader : %v, is failing : %t", parsed, calc.failing)
-	if calc.failing {
-		res = failingCalculator()
-	} else {
-		res, err = calculator(parsed.A, parsed.B, parsed.OperationType)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-	}
+	// to implement
+
+	res, _ = calculator(parsed.A, parsed.B, parsed.OperationType)
+
 	io.WriteString(w, fmt.Sprint(res))
 	return
 }

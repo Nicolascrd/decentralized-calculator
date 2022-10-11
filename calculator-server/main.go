@@ -10,30 +10,20 @@ import (
 	"time"
 )
 
-const voteEndpoint string = "/vote"
-const heartbeatEndpoint string = "/heartBeat"
-const calculationEndpoint string = "/calc"                  // for client to query nodes
-const calculationInternalEndpoint string = "/calc-internal" // for leader to query nodes
-const updateSysEndpoint string = "/update-sys"              // for leader to update system knowledge among followers
+const calculationEndpoint string = "/calc" // for client to query nodes
 
 type system struct {
-	NumberOfNodes int            `json:"numberOfNodes"` // number of nodes in the whole system
-	Addresses     map[int]string `json:"addresses"`     // ports of all nodes in order (including this one)
+	NumberOfNodes int            `json:"numberOfNodes"` // number of nodes this node is linked to
+	Addresses     map[int]string `json:"addresses"`     // ports of all the nodes this node is connected to
 }
 
 type calculatorServer struct {
-	logger      log.Logger // associated logger
-	addr        string     // URL in container eg centra-calcu-1:8000
-	ID          int        // server number e.g. 1
-	leaderID    int        // server number corresponding to known leader
-	leaderAddr  string     // port associated to leader
-	status      int        // 1 for leader, 2 for follower, 3 for candidate not sure I should keep that
-	hbReceived  bool       // true if a heart beat from the leader was received, reset to false at each tick from ticker
-	currentTerm int        // term is the period
-	votedFor    int        // id of node the server voted for in the current term
-	failing     bool       // byzantine failure assumed to make the result of calculation random
-	timeout     <-chan time.Time
-	sys         system // each node knows the system
+	logger  log.Logger // associated logger
+	addr    string     // URL in container eg centra-calcu-1:8000
+	ID      int        // server number e.g. 1
+	failing bool       // byzantine failure assumed to make the result of calculation random
+	timeout <-chan time.Time
+	sys     system // each node knows the system
 }
 
 type calculatorRequest struct {
@@ -43,14 +33,13 @@ type calculatorRequest struct {
 }
 
 type config struct {
-	UpdateSystem            bool `json:"updateSystem"`
-	MajorityVoteCalculation bool `json:"majorityVoteCalculation"`
+	ConfigGraph [][]int `json:"configGraph"`
 }
 
 var globalConfig config
 
 func main() {
-	fmt.Println("Hello calculator")
+	fmt.Println("Hello snowball calculator")
 	args := os.Args[1:]
 	if len(args) != 3 {
 		fmt.Println("Wrong number of arguments in command line, expecting only 2 numbers between 0 and 99 and one bool")
@@ -91,10 +80,25 @@ func main() {
 		fmt.Println("Could not decode config json : " + err.Error())
 		return
 	}
+
 	configFile.Close()
+
+	if len(globalConfig.ConfigGraph) == 0 {
+		fmt.Println("Empty config graph")
+		return
+	}
+	if len(globalConfig.ConfigGraph[0]) != len(globalConfig.ConfigGraph) {
+		fmt.Println("Invalid config graph")
+		return
+	}
+	if len(globalConfig.ConfigGraph) != tot {
+		fmt.Printf("Config graph (%d nodes) does not correspond to the CL number of nodes (%d)", len(globalConfig.ConfigGraph), tot)
+	}
+
 	fmt.Println("config : ", globalConfig)
+
 	calc := newCalculatorServer(ind, tot, byz)
-	go calc.launchTicker() // initiate timeouts
+	// go calc.launchTicker() // initiate timeouts --> start consensus process
 
 	calc.launchCalculatorServer()
 }
@@ -115,23 +119,17 @@ func newCalculatorServer(num int, tot int, failing bool) *calculatorServer {
 	}
 
 	return &calculatorServer{
-		logger:      *l,
-		ID:          num,
-		addr:        "decentra-calcu-" + fmt.Sprint(num) + ":8000",
-		timeout:     c,
-		sys:         sys,
-		status:      2,
-		currentTerm: 0, // currentTerm is incremented and starts at 1 at first apply
-		failing:     failing,
+		logger:  *l,
+		ID:      num,
+		addr:    "decentra-calcu-" + fmt.Sprint(num) + ":8000",
+		timeout: c,
+		sys:     sys,
+		failing: failing,
 	}
 }
 
 func (calc *calculatorServer) launchCalculatorServer() {
 	http.HandleFunc(calculationEndpoint, calc.calcHandler)
-	http.HandleFunc(heartbeatEndpoint, calc.heartBeatHandler)
-	http.HandleFunc(voteEndpoint, calc.vote)
-	http.HandleFunc(calculationInternalEndpoint, calc.calcInternalHandler)
-	http.HandleFunc(updateSysEndpoint, calc.updateSysHandler)
 
 	err := http.ListenAndServe(calc.addr, nil)
 	if err != nil {
