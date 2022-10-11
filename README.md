@@ -11,6 +11,10 @@ The client can query any of the containers, at :8001 for container 1, :8002 for 
 
 The consensus algorithm will then run with the containers and the client should receive its response, with one container "allowed" to fail.
 
+Master branch implements [the Raft consensus algorithm](https://raft.github.io/raft.pdf)
+
+Snowball branch implements [the Snowball consensus algorithm](https://assets.website-files.com/5d80307810123f5ffbb34d6e/6009805681b416f34dcae012_Avalanche%20Consensus%20Whitepaper.pdf)
+
 ## Context
 
 This project is part of my end-of-studies research project on consensus algorithms.
