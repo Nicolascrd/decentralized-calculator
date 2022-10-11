@@ -19,7 +19,7 @@ Snowball branch implements [the Snowball consensus algorithm](https://assets.web
 
 This project is part of my end-of-studies research project on consensus algorithms.
 
-Check out my bibliographic survey on consensus algorithms at https://github.com/Nicolascrd/researchProjectConsensus/blob/master/biblio-rp.pdf 
+Check out my [bibliographic survey on consensus algorithms](https://github.com/Nicolascrd/researchProjectConsensus/blob/master/biblio-rp.pdf)
 
 ## Testing
 
