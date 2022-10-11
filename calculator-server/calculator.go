@@ -27,7 +27,12 @@ func (calc *calculatorServer) calcHandler(w http.ResponseWriter, r *http.Request
 	} else {
 		if !globalConfig.MajorityVoteCalculation {
 			// ask a random follower or to the leader himself
-			res = calc.transferFromLeader(randomFromMapIndexes(&calc.sys.Addresses), parsed)
+			for {
+				res, err = calc.transferFromLeader(randomFromMapIndexes(&calc.sys.Addresses), parsed)
+				if err == nil {
+					break
+				}
+			}
 		} else {
 			// ask all followers and the leader himself to get a majority
 			res = calc.majorityVoteCalculation(parsed)

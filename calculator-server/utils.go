@@ -49,7 +49,10 @@ func unmarshalJSON(bytes []byte) (any, error) {
 	return ans, err
 }
 
-func postJSON(addr string, content any, logger *log.Logger) (*http.Response, error) {
+func postJSON(addr string, content any, logger *log.Logger, extendedDelay bool) (*http.Response, error) {
+	/* extendedDelay makes timeout delay 300ms instead of 200ms because if config does not update system,
+	   the leader will wait 300ms for failing nodes, thereby making the node requesting a little more.
+	*/
 	thebytes, err := marshalJSON(content)
 	if err != nil {
 		logger.Printf("Cannot marshal post JSON: %s", err.Error())
@@ -65,8 +68,14 @@ func postJSON(addr string, content any, logger *log.Logger) (*http.Response, err
 		return nil, err
 	}
 	req.Header.Add("Content-Type", "application/json")
+	var timeOut time.Duration
+	if extendedDelay {
+		timeOut = time.Millisecond * 300 // 300 ms max to reply
+	} else {
+		timeOut = time.Millisecond * 200 // 200 ms max to reply
+	}
 	client := &http.Client{
-		Timeout: time.Millisecond * 300, // 300 ms max to reply
+		Timeout: timeOut,
 	}
 	resp, err := client.Do(req)
 

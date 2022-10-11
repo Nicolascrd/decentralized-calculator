@@ -175,7 +175,7 @@ func (calc *calculatorServer) leaderSendsHB() {
 func (calc *calculatorServer) requestVote(addr string) bool {
 	var response voteResponse
 	calc.logger.Printf("Request vote sent to %s", addr)
-	resp, err := postJSON(addr+voteEndpoint, voteRequest{CandidateID: calc.ID, Term: calc.currentTerm}, &calc.logger)
+	resp, err := postJSON(addr+voteEndpoint, voteRequest{CandidateID: calc.ID, Term: calc.currentTerm}, &calc.logger, false)
 	if err != nil {
 		calc.logger.Printf("Error requesting vote at %s : %s", addr, err.Error())
 		return false
@@ -194,7 +194,7 @@ func (calc *calculatorServer) requestVote(addr string) bool {
 
 func (calc *calculatorServer) sendHB(addr string) bool {
 	var response heatBeatResponse
-	resp, err := postJSON(addr+heartbeatEndpoint, heartBeatRequest{LeaderID: calc.ID, LeaderAddr: calc.addr, LeaderTerm: calc.currentTerm}, &calc.logger)
+	resp, err := postJSON(addr+heartbeatEndpoint, heartBeatRequest{LeaderID: calc.ID, LeaderAddr: calc.addr, LeaderTerm: calc.currentTerm}, &calc.logger, false)
 
 	if err != nil {
 		calc.logger.Printf("ERROR SENDING HB at %s : %s", addr, err.Error())
@@ -218,7 +218,7 @@ func (calc *calculatorServer) sendHB(addr string) bool {
 
 func (calc *calculatorServer) transferLeader(content calculatorRequest) int {
 	// tranfer calculation from receiving node acting as a server to leader
-	resp, err := postJSON(calc.leaderAddr+calculationEndpoint, content, &calc.logger)
+	resp, err := postJSON(calc.leaderAddr+calculationEndpoint, content, &calc.logger, true)
 
 	if err != nil {
 		calc.logger.Printf("Error transfering calculation to leader : %s", err.Error())
@@ -235,25 +235,25 @@ func (calc *calculatorServer) transferLeader(content calculatorRequest) int {
 	return integer
 }
 
-func (calc *calculatorServer) transferFromLeader(node int, content calculatorRequest) int {
+func (calc *calculatorServer) transferFromLeader(node int, content calculatorRequest) (int, error) {
 	// tranfer calculation from leader to any node including leader itself
-	resp, err := postJSON(calc.sys.Addresses[node]+calculationInternalEndpoint, content, &calc.logger)
+	resp, err := postJSON(calc.sys.Addresses[node]+calculationInternalEndpoint, content, &calc.logger, false)
 
 	calc.logger.Printf("Transfering calculation to node n°%d", node)
 
 	if err != nil {
-		calc.logger.Printf("Error transfering calculation to leader : %s", err.Error())
-		return 0
+		calc.logger.Printf("Error transfering calculation to node n°%d : %s", node, err.Error())
+		return 0, err
 	}
 
 	integer, err := decodeIntResponse(resp, &calc.logger)
 
 	if err != nil {
 		calc.logger.Printf("Error decoding int response from leader : %s", err.Error())
-		return 0
+		return 0, err
 	}
 
-	return integer
+	return integer, nil
 }
 
 func (calc *calculatorServer) majorityVoteCalculation(calculation calculatorRequest) int {
@@ -264,7 +264,11 @@ func (calc *calculatorServer) majorityVoteCalculation(calculation calculatorRequ
 	for node := range calc.sys.Addresses {
 		wg.Add(1)
 		go func(node int, content calculatorRequest) {
-			vote := calc.transferFromLeader(node, content)
+			vote, err := calc.transferFromLeader(node, content)
+			if err != nil {
+				wg.Done()
+				return
+			}
 			mut.Lock()
 			if _, ok := votes[vote]; ok {
 				votes[vote]++
@@ -286,7 +290,7 @@ func (calc *calculatorServer) majorityVoteCalculation(calculation calculatorRequ
 	if max < len(calc.sys.Addresses)/2 {
 		fmt.Println("Majority vote for calculation : no 50% majority")
 	} else {
-		fmt.Println("Majority vote for calculation : at least 50% majority")
+		fmt.Printf("Majority vote for calculation : at least 50%% majority for %d with %d votes", res, max)
 	}
 	return res
 }
@@ -319,7 +323,7 @@ func (calc *calculatorServer) newSys(doFollow []int) {
 		wg.Add(1)
 		go func(addr string) {
 			defer wg.Done()
-			postJSON(addr+updateSysEndpoint, calc.sys, &calc.logger)
+			postJSON(addr+updateSysEndpoint, calc.sys, &calc.logger, false)
 		}(addr)
 	}
 	wg.Wait()

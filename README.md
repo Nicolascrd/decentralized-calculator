@@ -27,7 +27,7 @@ Select your parameters in config.json :
 
 ```
 {
-    "updateSystem" : If true the systems remap when one node is failing completely (failing to reply to request within 300ms)
+    "updateSystem" : If true the systems remap when one node is failing completely (failing to reply to request within 200ms)
     "majorityVoteCalculation" : If true the leader triggers a majority vote for each calculation (all nodes calculate and vote)
 }
 ```
