@@ -13,7 +13,18 @@ The consensus algorithm will then run with the containers and the client should 
 
 Master branch implements [the Raft consensus algorithm](https://raft.github.io/raft.pdf)
 
-Snowball branch implements [the Snowball consensus algorithm](https://assets.website-files.com/5d80307810123f5ffbb34d6e/6009805681b416f34dcae012_Avalanche%20Consensus%20Whitepaper.pdf)
+Initially I wanted to have a Snowball branch which would implement [the Snowball consensus algorithm](https://assets.website-files.com/5d80307810123f5ffbb34d6e/6009805681b416f34dcae012_Avalanche%20Consensus%20Whitepaper.pdf). 
+
+But I realised starting the implementation that the Snowball consensus algorithm is not at all a good fit for a decentralized calculator. 
+That is for a few reasons :
+- In a decentralized calculator, each node implements one calculator and the client queries a calculation. In Snowball, nodes don't have a preference for any value, they are just trying to reach consensus fast with the values the clients provides.
+- I wanted to tweek the snowball algorithm to make the node calculate at some point to reach consensus on the answer value, not on the query. However if the nodes calculate when they are blank, should they return the value they calculated ( as if they were colored ) or should they ask a quorum for an anwer to propagate the request ? Should they do both ?
+- In fact, if they return the value they calculated, there is no propagation, no majority and no consensus. If they ask a quorum for an answer, we would have to compute at some point (because otherwise they will never be a majority). Therefore we would need to track the depth and assume that at depth = d , the nodes start computing an answer, which for my example would be the answer of the calculation, or a random integer if the node is faulty. Then the actual consensus protocol can run, maybe the first node can launch it and so on, but we are getting away from the original protocol and adding a lot of complexity for no benefit.
+- One option I thought could be a solution would be to simply send the query to every node from the first node. Each node does the computation. Then each node has a value, and we then run the Snowball consensus from the first node, with all nodes already colored. But this removes one of the benefit of snowball with is that all nodes are not supposed to be directly connected to each other.
+
+I would be able to tweek the snowball consensus protocol and make it work. But the original idea of the protocol would be lost. 
+Therefore I am starting a new project with a replicated state machine to compare both algorithms in a more interesting context.
+
 
 ## Context
 
